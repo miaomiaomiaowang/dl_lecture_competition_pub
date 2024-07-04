@@ -2,6 +2,8 @@ import torch
 from torch import nn
 from src.models.base import *
 from typing import Dict, Any
+import torch.nn.functional as F
+
 
 _BASE_CHANNELS = 64
 
@@ -14,6 +16,8 @@ class EVFlowNet(nn.Module):
         self.encoder2 = general_conv2d(in_channels = _BASE_CHANNELS, out_channels=2*_BASE_CHANNELS, do_batch_norm=not self._args.no_batch_norm)
         self.encoder3 = general_conv2d(in_channels = 2*_BASE_CHANNELS, out_channels=4*_BASE_CHANNELS, do_batch_norm=not self._args.no_batch_norm)
         self.encoder4 = general_conv2d(in_channels = 4*_BASE_CHANNELS, out_channels=8*_BASE_CHANNELS, do_batch_norm=not self._args.no_batch_norm)
+
+        self.dropout = nn.Dropout(p=0.5)  # 添加Dropout层
 
         self.resnet_block = nn.Sequential(*[build_resnet_block(8*_BASE_CHANNELS, do_batch_norm=not self._args.no_batch_norm) for i in range(2)])
 
@@ -33,12 +37,16 @@ class EVFlowNet(nn.Module):
         # encoder
         skip_connections = {}
         inputs = self.encoder1(inputs)
+        inputs = self.dropout(inputs)  # 添加Dropout
         skip_connections['skip0'] = inputs.clone()
         inputs = self.encoder2(inputs)
+        inputs = self.dropout(inputs)  # 添加Dropout
         skip_connections['skip1'] = inputs.clone()
         inputs = self.encoder3(inputs)
+        inputs = self.dropout(inputs)  # 添加Dropout
         skip_connections['skip2'] = inputs.clone()
         inputs = self.encoder4(inputs)
+        inputs = self.dropout(inputs)  # 添加Dropout
         skip_connections['skip3'] = inputs.clone()
 
         # transition
